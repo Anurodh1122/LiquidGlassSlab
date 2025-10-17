@@ -1,4 +1,4 @@
-# Liquid Glass Slab Shader Demo
+# Apple IOS26 Like Liquid Glass Slab Shader
 
 A WebGL-based interactive frosted glass / liquid slab shader. Users can upload an image, adjust the slab size, curvature, corner radius, transparency, and blur to create a glassy refractive effect.
 
@@ -12,7 +12,7 @@ A WebGL-based interactive frosted glass / liquid slab shader. Users can upload a
 ## Demo
 ![Demo Video](assets/demo.gif)  <!-- or embed video link -->
 
-Try it live here: [GitHub Pages Demo](https://yourusername.github.io/LiquidGlassSlab/)
+Try it live here: [Liquid glass slab](https://anurodh1122.github.io/LiquidGlassSlab/)
 
 ## How to Use
 1. Click the "Upload Image" button
@@ -25,10 +25,4 @@ Try it live here: [GitHub Pages Demo](https://yourusername.github.io/LiquidGlass
    - Blur
 3. Drag the slab on the canvas to reposition
 
-## Tech Stack
-- HTML, CSS, JS
-- WebGL (GLSL shaders)
-- Vanilla JS (no frameworks)
 
-## License
-MIT License
