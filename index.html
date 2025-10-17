@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Liquid Glass UI Shader</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <input type="file" id="upload" accept="image/*">
+    <div class="controls">
+        <div class="control-item">
+            <label>Refraction: <span id="refractionValue">2.000</span></label>
+            <input type="range" id="refraction" min="0" max="5" step="0.001" value="2.000">
+        </div>
+        <div class="control-item">
+            <label>Curvature: <span id="domeValue">6.0</span></label>
+            <input type="range" id="curvature" min="1" max="15" step="0.2" value="6.0">
+        </div>
+        <div class="control-item">
+            <label>Transparency: <span id="alphaValue">0.9</span></label>
+            <input type="range" id="alpha" min="0" max="1" step="0.01" value="0.9">
+        </div>
+        <div class="control-item">
+            <label>Width: <span id="widthValue">300</span></label>
+            <input type="range" id="slabWidth" min="50" max="600" step="1" value="300">
+        </div>
+        <div class="control-item">
+            <label>Height: <span id="heightValue">400</span></label>
+            <input type="range" id="slabHeight" min="50" max="600" step="1" value="400">
+        </div>
+        <div class="control-item">
+            <label>Corner Radius: <span id="cornerValue">0.50</span></label>
+            <input type="range" id="cornerRadius" min="0" max="1" step="0.01" value="0.50">
+        </div>
+        <div class="control-item">
+            <label>Blur: <span id="blurValue">2.5</span></label>
+            <input type="range" id="blurSlider" min="0" max="5" step="0.1" value="2.5">
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+    <script type="module" src="main.js"></script>
+</body>
+</html>

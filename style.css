@@ -1,0 +1,158 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    height: 100%;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* ---------------- Optimized Liquid Glass Upload Button ---------------- */
+#upload {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 10;
+    width: 140px;               /* fixed width for consistent layout */
+    height: 40px;               /* fixed height */
+    padding: 0;                 /* no extra padding needed */
+    border: none;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.25);
+    color: rgb(180, 180, 180);
+    font-weight: 500;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: none;
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s ease;
+    overflow: hidden;
+}
+
+/* Hide default file input button */
+#upload::-webkit-file-upload-button {
+    visibility: hidden;
+}
+
+/* Custom label using pseudo-element */
+#upload::before {
+    content: 'Upload Image';
+    display: block;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    line-height: 40px;           /* vertically center text */
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.15);
+    color: rgb(180, 180, 180);
+    font-weight: 500;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    transition: all 0.25s ease;
+}
+
+/* Hover effect */
+#upload:hover::before {
+    background: rgba(0, 0, 0, 0.25);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+}
+
+/* Active effect */
+#upload:active::before {
+    background: rgba(0, 0, 0, 0.2);
+    transform: translateY(1px);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+}
+
+
+.controls {
+    position: fixed;
+    bottom: 20px; /* small gap from bottom */
+    left: 50%;    /* center horizontally */
+    transform: translateX(-50%); /* center alignment */
+      /* adapt to content */
+    width: 90%; /* prevent it from stretching too far */
+    background: rgba(255, 255, 255, 0.05); /* slightly darker for contrast */
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+    padding: 10px 15px;
+    border-radius: 12px; /* rounded edges */
+    box-sizing: border-box;
+    z-index: 10;
+    border: 1px solid rgba(255,255,255,0.2); /* subtle border */
+    backdrop-filter: blur(5px); /* subtle frosted glass effect */
+}
+.controls {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    background: rgba(125, 125, 125, 0.25);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around; /* even spacing */
+    gap: 15px;
+    padding: 12px 15px;
+    border-radius: 12px;
+    box-sizing: border-box;
+    z-index: 10;
+    border: 1px solid rgba(255,255,255,0.2);
+    backdrop-filter: blur(5px);
+}
+
+/* Each slider-label pair container */
+.control-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 80px; /* prevents items from collapsing */
+    flex: 1 1 100px; /* flexible width but consistent minimum */
+}
+
+/* Label styling */
+.control-item label {
+    font-size: 0.8rem;
+    margin-bottom: 4px;
+    color: rgb(210, 210, 210);
+}
+
+/* Slider styling */
+.controls input[type="range"] {
+    -webkit-appearance: none;
+    width: 120px;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.25);
+    outline: none;
+    transition: all 0.2s;
+}
+
+.controls input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: rgba(200, 200, 200, 0.9);
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+    transition: all 0.2s;
+}
+
+.controls input[type="range"]:hover::-webkit-slider-thumb {
+    transform: scale(1.2);
+}
+
+
+
+
