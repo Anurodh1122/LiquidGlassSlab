@@ -9,7 +9,7 @@ A WebGL-based interactive frosted glass / liquid slab shader. Users can upload a
 - Upload your own image
 - Control panel for live parameter tweaking
 
-## Demo
+## Demo: [Liquid glass slab](https://anurodh1122.github.io/LiquidGlassSlab/)
 ![Shader Demo](./demo.gif)  <!-- or embed video link -->
 
 Try it live here: [Liquid glass slab](https://anurodh1122.github.io/LiquidGlassSlab/)
