@@ -12,7 +12,6 @@ A WebGL-based interactive frosted glass / liquid slab shader. Users can upload a
 ## Demo: [Liquid glass slab](https://anurodh1122.github.io/LiquidGlassSlab/)
 ![Shader Demo](./demo.gif)  <!-- or embed video link -->
 
-Try it live here: [Liquid glass slab](https://anurodh1122.github.io/LiquidGlassSlab/)
 Photo credit: [Stunning High-Resolution Nature and Landscape Backgrounds by Vecteezy](https://www.vecteezy.com/photo/49547663-stunning-high-resolution-nature-and-landscape-backgrounds-breathtaking-scenery-in-hd)
 
 ## How to Use
