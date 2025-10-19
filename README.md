@@ -31,9 +31,11 @@ The shader includes two pre-built presets you can try instantly:
 ![Preset Display](./assets/preset.gif)
 | Preset | Description | Recommended Use |
 |---------|--------------|-----------------|
-|**Rounded Slab** | Balanced rectangle with subtle corner radius and refraction. | Default elegant “glass panel” look. |
-|**Circle Slab** | Perfect circle with soft dome curvature. | Ideal for bubble or lens-like effects. |
+| **Rounded Slab** | Balanced rectangle with subtle corner radius and smooth refraction. | Default elegant “glass panel” look for UI cards and overlays. |
+| **Circle Slab** | Perfect circular dome with soft curvature and even refraction spread. | Ideal for bubble, lens, or spherical highlight effects. |
+| **Pill Slab** | Wide rectangular capsule with stronger curvature at the shorter edges and flatter refraction across the longer sides. | Best for button-like or elongated glass surfaces (status bars, menu highlights). |
 > Select a preset from the dropdown to automatically adjust all relevant parameters (size, curvature, blur, etc.).
+> Each preset is **pre-customized for windowed, tablet, and mobile displays**, ensuring consistent visual appearance and curvature behavior across devices.
 
 Photo credit: [Stunning High-Resolution Nature and Landscape Backgrounds by Vecteezy](https://www.vecteezy.com/photo/49547663-stunning-high-resolution-nature-and-landscape-backgrounds-breathtaking-scenery-in-hd)
 

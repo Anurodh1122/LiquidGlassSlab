@@ -47,33 +47,55 @@ uniform float u_cornerRadius;
 uniform float u_blur;
 
 // ----------------- Rounded rectangle SDF -----------------
-float roundedBoxSDF(vec2 pt, vec2 size, float radius){
-    vec2 d = abs(pt) - size + vec2(radius);
+float roundedBoxSDF(vec2 pt, vec2 halfSize, float cornerRadius) {
+    // scale like CSS border-radius — relative to shorter side
+    float shortEdge = min(halfSize.x, halfSize.y);
+    float r = cornerRadius * shortEdge;
+
+    // convert local (-1..1) to actual pixel units
+    vec2 p = pt * halfSize;
+
+    // compute distance
+    vec2 d = abs(p) - halfSize + vec2(r);
     d = max(d, 0.0);
-    return length(d) - radius;
+    return (length(d) - r) / shortEdge; // normalized back to -1..1
 }
+
 
 // ----------------- Dome refraction (your original logic) -----------------
 vec2 domeRefraction(vec2 local, vec2 halfSize, float cornerRadius) {
-    // local: -1..1 along slab axes
-    // cornerRadius: normalized 0..1
-    
-    // Clamp local to rounded rectangle edge
-    vec2 clamped = clamp(local, vec2(-1.0 + cornerRadius), vec2(1.0 - cornerRadius));
+    vec2 p = local * halfSize;
 
-    // Distance from the edge (0=center, 1=slab edge)
-    vec2 dist = (clamped - local) * vec2(sign(local));
+    float shortEdge = min(halfSize.x, halfSize.y);
+    float longEdge = max(halfSize.x, halfSize.y);
+    float r = cornerRadius * shortEdge;
 
-    // Combine X and Y distances for dome intensity
-    float t = pow(length(dist) / 1.0, u_domePower); 
+    // Compute “rounded rectangle edge distance” per axis
+    vec2 edgeDist = vec2(
+        max(abs(p.x) - (halfSize.x - r), 0.0),
+        max(abs(p.y) - (halfSize.y - r), 0.0)
+    );
 
-    // Avoid zero-length
-    if(length(local) == 0.0) return vec2(0.0);
+    // Normalize distances to 0..1 range relative to halfSize
+    edgeDist.x /= halfSize.x;
+    edgeDist.y /= halfSize.y;
 
-    // Refraction vector proportional to local position
-    vec2 offset = normalize(local) * t * u_maxRefract;
+    // Blend factor based on aspect ratio (longer axis stronger)
+    float aspectX = halfSize.x / longEdge;
+    float aspectY = halfSize.y / longEdge;
+
+    vec2 influenceVec = edgeDist * vec2(aspectX, aspectY);
+
+    float t = pow(length(influenceVec), u_domePower);
+
+    if(length(p) < 1e-4) return vec2(0.0);
+
+    // Refraction along local vector
+    vec2 offset = normalize(p) * t * u_maxRefract;
     return -offset;
 }
+
+
 
 
 // ----------------- Frosted blur sampling -----------------
@@ -103,7 +125,7 @@ void main() {
     vec2 local = (pixelUV - center) / halfSize;
 
     // Rounded rectangle mask
-    float dist = roundedBoxSDF(local, vec2(1.0,1.0), u_cornerRadius);
+    float dist = roundedBoxSDF(local, halfSize, u_cornerRadius);
     if(dist > 0.0) {
         gl_FragColor = texture2D(u_background, v_uv); // outside slab
         return;
@@ -348,6 +370,14 @@ const presets = {
         DOME_POWER: isMobile ? 6.5 : 6.5,
         CORNER_RADIUS: 1.0,
         BLUR: isMobile ? 0.4 : 1.0,
+    }),
+    pill: () => ({
+        w: isMobile ? 150: 250,
+        h: isMobile ? 75 : 125, 
+        MAX_REFRACT: 2.500,
+        DOME_POWER: 6.0,
+        CORNER_RADIUS: 1.0,
+        BLUR: isMobile ? 0.3 : 0.5,
     })
 };
 
