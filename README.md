@@ -13,12 +13,12 @@ Users can upload an image, drag a smooth refractive “glass slab” around, and
 - Responsive for both desktop and mobile
 
 ## Demo: [Liquid glass slab](https://anurodh1122.github.io/LiquidGlassSlab/)
-![Main Demo](./asset/demo.gif)
+![Main Demo](./assets/demo.gif)
 
 ## How to Use
 1. Click the "Upload Image" button
 2. Use the sliders at the bottom to adjust:
-   ![Controls Guide](./asset/controls.gif)
+   ![Controls Guide](./assets/controls.gif)
    - Refraction intensity
    - Curvature
    - Slab Width/Height
@@ -28,7 +28,7 @@ Users can upload an image, drag a smooth refractive “glass slab” around, and
 3. Drag the slab on the canvas to reposition
 
 The shader includes a two pre-built presets you can try instantly:
-![Preset Display](./asset/preset.gif)
+![Preset Display](./assets/preset.gif)
 | Preset | Description | Recommended Use |
 |---------|--------------|-----------------|
 |**Rounded Slab** | Balanced rectangle with subtle corner radius and refraction. | Default elegant “glass panel” look. |
