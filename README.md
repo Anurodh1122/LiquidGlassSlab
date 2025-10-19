@@ -27,7 +27,7 @@ Users can upload an image, drag a smooth refractive “glass slab” around, and
    - Finger or cursor tracking speed
 3. Drag the slab on the canvas to reposition
 
-The shader includes two pre-built presets you can try instantly:
+The shader includes three pre-built presets you can try instantly:
 ![Preset Display](./assets/preset.gif)
 | Preset | Description | Recommended Use |
 |---------|--------------|-----------------|
