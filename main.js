@@ -9,7 +9,6 @@ controlPanel.style.display = "none"; // hide initially
 //sliders
 const refractionSlider = document.getElementById("refraction");
 const curvatureSlider = document.getElementById("curvature");
-const alphaSlider = document.getElementById("alpha");
 const widthSlider = document.getElementById("slabWidth");
 const heightSlider = document.getElementById("slabHeight");
 const cornerSlider = document.getElementById("cornerRadius");
@@ -17,6 +16,7 @@ const blurSlider = document.getElementById("blurSlider");
 
 // Hide control panel initially
 controlPanel.style.display = "none";
+
 
 
 // ---------------- SHADERS INLINE ----------------
@@ -101,7 +101,6 @@ void main() {
     vec2 halfSize = u_size * 0.5;
 
     vec2 local = (pixelUV - center) / halfSize;
-    local.y *= u_resolution.x / u_resolution.y;
 
     // Rounded rectangle mask
     float dist = roundedBoxSDF(local, vec2(1.0,1.0), u_cornerRadius);
@@ -165,28 +164,25 @@ const u_mouse = gl.getUniformLocation(program, "u_mouse");
 const u_size = gl.getUniformLocation(program, "u_size");
 const u_background = gl.getUniformLocation(program, "u_background");
 const u_dpr = gl.getUniformLocation(program, "u_dpr");
-// NEW UNIFORMS FOR PARAMETERS
 const u_maxRefract = gl.getUniformLocation(program, "u_maxRefract");
 const u_domePower = gl.getUniformLocation(program, "u_domePower");
 const u_alpha = gl.getUniformLocation(program, "u_alpha");
 const u_cornerRadius = gl.getUniformLocation(program, "u_cornerRadius");
 const u_blur = gl.getUniformLocation(program, "u_blur");
-
-let params = {
-    MAX_REFRACT: 2.000,
-    DOME_POWER: 4.0,
-    ALPHA: 0.9,
-    CORNER_RADIUS: 0.5,
-    BLUR: 2.5
-};
 // ---------------- TEXTURE ----------------
 let background = gl.createTexture();
 let imageLoaded = false;
+const uploadInput = document.getElementById('upload');
+const uploadBtn = document.getElementById('uploadBtn');
+const preview = document.getElementById('preview');
 
-document.getElementById('upload').addEventListener('change', e => {
+uploadBtn.addEventListener('click', () => uploadInput.click());
+
+uploadInput.addEventListener('change', e => {
     const file = e.target.files[0];
     if(!file) return;
     const img = new Image();
+    const preview = document.getElementById('preview');
     img.onload = () => {
         gl.bindTexture(gl.TEXTURE_2D, background);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
@@ -199,9 +195,36 @@ document.getElementById('upload').addEventListener('change', e => {
         imageLoaded = true;
         controlPanel.style.display = "flex";
         requestAnimationFrame(draw);
+
+        preview.src = img.src;
+        preview.style.display = 'block';
     };
     img.src = URL.createObjectURL(file);
+
+    if (uploadInput.files.length > 0) {
+        presetDropdown.classList.remove('disabled');
+    } else {
+        presetDropdown.classList.add('disabled');
+    }
 });
+
+const presetDropdown = document.querySelector('.preset-wrapper .dropdown');
+const dropdown = presetDropdown;
+const select = dropdown.querySelector('.select span');
+const hiddenInput = dropdown.querySelector('input[name="preset"]');
+const options = dropdown.querySelectorAll('.dropdown-menu li');
+presetDropdown.classList.add('disabled');
+
+
+uploadInput.addEventListener('change', () => {
+    if (uploadInput.files.length > 0) {
+        presetDropdown.classList.remove('disabled');
+    } else {
+        presetDropdown.classList.add('disabled');
+    }
+});
+
+
 
 refractionSlider.addEventListener("input", e => {
     params.MAX_REFRACT = parseFloat(e.target.value);
@@ -213,10 +236,6 @@ curvatureSlider.addEventListener("input", e => {
     document.getElementById("domeValue").innerText = params.DOME_POWER.toFixed(1);
 });
 
-alphaSlider.addEventListener("input", e => {
-    params.ALPHA = parseFloat(e.target.value);
-    document.getElementById("alphaValue").innerText = params.ALPHA.toFixed(2);
-});
 blurSlider.addEventListener("input", e => {
     params.BLUR = parseFloat(e.target.value);
     blurValue.textContent = params.BLUR.toFixed(1);
@@ -225,8 +244,79 @@ blurSlider.addEventListener("input", e => {
 
 
 // ---------------- SLAB ----------------
-let slab = { x: canvas.width/2, y: canvas.height/2, w: 300, h: 400 };
+// Determine mobile or desktop
+const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+
+// Default slab and params
+let slab = {
+    x: 0,
+    y: 0,
+    w: isMobile ? 100 : 200,
+    h: isMobile ? 100 : 200
+};
+
+let params = {
+    MAX_REFRACT: 1.75,
+    DOME_POWER: 4.0,
+    CORNER_RADIUS: 0.5,
+    ALPHA: 1.0,
+    BLUR: 2.0,
+    TRACK_SPEED: isMobile ? 0.05 : 0.02
+};
+
+// Slider elements
+const sliders = [
+    {id: 'refraction', value: params.MAX_REFRACT, label: 'refractionValue', fixed: 3},
+    {id: 'curvature', value: params.DOME_POWER, label: 'domeValue', fixed: 1},
+    {id: 'slabWidth', value: slab.w, label: 'widthValue', fixed: 0},
+    {id: 'slabHeight', value: slab.h, label: 'heightValue', fixed: 0},
+    {id: 'cornerRadius', value: params.CORNER_RADIUS, label: 'cornerValue', fixed: 2},
+    {id: 'blurSlider', value: params.BLUR, label: 'blurValue', fixed: 1},
+    {id: 'trackSpeedSlider', value: params.TRACK_SPEED, label: 'trackSpeedValue', fixed: 3}
+];
+
+// Initialize sliders
+sliders.forEach(s => {
+    const slider = document.getElementById(s.id);
+    const span = document.getElementById(s.label);
+    slider.value = s.value;
+    span.textContent = s.value.toFixed(s.fixed);
+
+    slider.addEventListener('input', e => {
+        const val = parseFloat(e.target.value);
+        span.textContent = val.toFixed(s.fixed);
+
+        // Update JS params or slab
+        switch(s.id){
+            case 'refraction': params.MAX_REFRACT = val; break;
+            case 'curvature': params.DOME_POWER = val; break;
+            case 'slabWidth': slab.w = val; break;
+            case 'slabHeight': slab.h = val; break;
+            case 'cornerRadius': params.CORNER_RADIUS = val; break;
+            case 'blurSlider': params.BLUR = val; break;
+            case 'trackSpeedSlider': params.TRACK_SPEED = val; break;
+        }
+    });
+});
+
+let currentMouse = [0, 0];  // will set after resize
+let targetMouse = [0, 0]; 
 let dragging = false;
+slab.x = canvas.width/2;
+slab.y = canvas.height/2;
+currentMouse[0] = slab.x;
+currentMouse[1] = slab.y;
+targetMouse[0] = slab.x;
+targetMouse[1] = slab.y;
+
+
+const trackSpeedSlider = document.getElementById("trackSpeedSlider");
+const trackSpeedValue = document.getElementById("trackSpeedValue");
+
+trackSpeedSlider.addEventListener("input", (e) => {
+    params.TRACK_SPEED = parseFloat(e.target.value);
+    trackSpeedValue.textContent = params.TRACK_SPEED.toFixed(3);
+});
 
 widthSlider.addEventListener("input", e => {
     slab.w = parseInt(e.target.value);
@@ -242,21 +332,108 @@ cornerSlider.addEventListener("input", e => {
     document.getElementById("cornerValue").innerText = params.CORNER_RADIUS.toFixed(2);
 });
 
+const presets = {
+    rounded: () => ({
+        w: isMobile ? 100 : 200,
+        h: isMobile ? 100 : 200, 
+        MAX_REFRACT: 1.750,
+        DOME_POWER: 4.0,
+        CORNER_RADIUS: 0.5,
+        BLUR: isMobile ? 1.4 : 2.0,
+    }),
+    circle: () => ({
+        w: isMobile ? 100 : 200,
+        h: isMobile ? 100 : 200,       // keep circle
+        MAX_REFRACT: isMobile ? 0.075 : 0.1300,
+        DOME_POWER: isMobile ? 6.5 : 6.5,
+        CORNER_RADIUS: 1.0,
+        BLUR: isMobile ? 0.6 : 1.5,
+    })
+};
 
-canvas.addEventListener('pointerdown', e => {
-    const mx = e.clientX, my = e.clientY;
-    if(mx > slab.x - slab.w/2 && mx < slab.x + slab.w/2 &&
-       my > slab.y - slab.h/2 && my < slab.y + slab.h/2){
-        dragging = true;
+dropdown.querySelector('.select').addEventListener('click', (e) => {
+    if (!dropdown.classList.contains('disabled')) {
+        dropdown.classList.toggle('active');
     }
 });
+
+document.addEventListener('click', (e) => {
+    if (!dropdown.contains(e.target)) {
+        dropdown.classList.remove('active');
+    }
+});
+
+options.forEach(option => {
+    option.addEventListener('click', (e) => {
+        if (dropdown.classList.contains('disabled')) return;
+        e.stopPropagation(); // prevent dropdown toggle
+        const value = option.getAttribute('data-value');
+        const preset = presets[value]();
+
+        // update displayed text
+        select.textContent = option.textContent;
+        hiddenInput.value = value;
+        dropdown.classList.remove('active');
+
+        // apply preset to slab
+        slab.w = preset.w;
+        slab.h = preset.h;
+        params.MAX_REFRACT = preset.MAX_REFRACT;
+        params.DOME_POWER = preset.DOME_POWER;
+        params.CORNER_RADIUS = preset.CORNER_RADIUS;
+        params.BLUR = preset.BLUR;
+
+        // update sliders & displayed numbers
+        widthSlider.value = slab.w;
+        heightSlider.value = slab.h;
+        refractionSlider.value = params.MAX_REFRACT;
+        curvatureSlider.value = params.DOME_POWER;
+        cornerSlider.value = params.CORNER_RADIUS;
+        blurSlider.value = params.BLUR;
+
+        document.getElementById("widthValue").innerText = slab.w;
+        document.getElementById("heightValue").innerText = slab.h;
+        document.getElementById("refractionValue").innerText = params.MAX_REFRACT.toFixed(3);
+        document.getElementById("domeValue").innerText = params.DOME_POWER.toFixed(1);
+        document.getElementById("cornerValue").innerText = params.CORNER_RADIUS.toFixed(2);
+        document.getElementById("blurValue").textContent = params.BLUR.toFixed(1);
+    });
+});
+document.addEventListener('click', (e) => {
+    if (!dropdown.contains(e.target)) {
+        dropdown.classList.remove('active');
+    }
+});
+
+// ---------------- POINTER EVENTS ----------------
+canvas.addEventListener('pointerdown', e => {
+    dragging = true;
+    targetMouse[0] = e.clientX;
+    targetMouse[1] = e.clientY;
+});
+
+canvas.addEventListener('pointermove', e => {
+    if (dragging) {
+        targetMouse[0] = e.clientX;
+        targetMouse[1] = e.clientY;
+    }
+});
+
 canvas.addEventListener('pointerup', () => dragging = false);
 canvas.addEventListener('pointerout', () => dragging = false);
-canvas.addEventListener('pointermove', e => {
-    if(dragging){
-        slab.x = e.clientX;
-        slab.y = e.clientY;
-    }
+
+// Prevent touch scroll on mobile
+if(isMobile){
+    canvas.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
+    canvas.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+}
+
+// ---------------- Toggle Control Panel ----------------
+const toggleBtn = document.getElementById("toggleControls");
+const controlsPanel = document.querySelector(".controls");
+
+toggleBtn.addEventListener("click", () => {
+    controlsPanel.classList.toggle("show");
 });
 
 // ---------------- RENDER ----------------
@@ -267,14 +444,29 @@ function resize() {
     canvas.style.width = window.innerWidth + 'px';
     canvas.style.height = window.innerHeight + 'px';
     gl.viewport(0, 0, canvas.width, canvas.height);
+
+    if (!dragging) {
+        slab.x = canvas.width/2;
+        slab.y = canvas.height/2;
+    }
+
 }
 window.addEventListener("resize", resize);
 resize();
 
 function draw() {
     if(!imageLoaded) return;
-    resize();
     gl.clear(gl.COLOR_BUFFER_BIT);
+
+    // ---- Smooth motion update ----
+    const smoothing = params.TRACK_SPEED;
+    currentMouse[0] += (targetMouse[0] - currentMouse[0]) * smoothing;
+    currentMouse[1] += (targetMouse[1] - currentMouse[1]) * smoothing;
+
+    slab.x = currentMouse[0];
+    slab.y = currentMouse[1];
+
+    // ------------------------------
 
     // Update shader parameters
     gl.uniform1f(u_maxRefract, params.MAX_REFRACT);
@@ -282,12 +474,9 @@ function draw() {
     gl.uniform1f(u_alpha, params.ALPHA);
     gl.uniform1f(u_cornerRadius, params.CORNER_RADIUS);
     gl.uniform1f(u_blur, params.BLUR);
-
-
     gl.uniform2f(u_resolution, canvas.width, canvas.height);
     gl.uniform2f(u_mouse, slab.x, slab.y);
     gl.uniform2f(u_size, slab.w, slab.h);
-
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, background);
     gl.drawArrays(gl.TRIANGLES, 0, 6);

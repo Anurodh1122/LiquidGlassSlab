@@ -1,114 +1,252 @@
 html, body {
     margin: 0;
     padding: 0;
-    overflow: hidden;
-    height: 100%;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-canvas {
-    display: block;
     width: 100%;
     height: 100%;
+    overflow: hidden; 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    -webkit-text-size-adjust: 100%;
+    touch-action: none;
+    background: rgb(0, 0, 0); 
 }
 
-/* ---------------- Optimized Liquid Glass Upload Button ---------------- */
-#upload {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    z-index: 10;
-    width: 140px;               /* fixed width for consistent layout */
-    height: 40px;               /* fixed height */
-    padding: 0;                 /* no extra padding needed */
-    border: none;
-    border-radius: 12px;
-    background: rgba(0, 0, 0, 0.25);
-    color: rgb(180, 180, 180);
+/* Fullscreen responsive canvas */
+canvas {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover; 
+}
+
+/* ----------------- Top Controls ----------------- */
+.top-controls {
+    position: fixed;
+    top: 10px; left: 0;
+    width: 100%;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 50;
+    box-sizing: border-box;
+}
+/* ---------------- Shared Control Styles ---------------- */
+.upload-wrapper,
+.preset-wrapper {
+    display: flex;
+    flex-direction: column; 
+    align-items: flex-start;
+}
+
+.upload-wrapper label,
+.preset-wrapper label {
+    font-size: 13px;
     font-weight: 500;
-    font-size: 14px;
-    cursor: pointer;
-    box-shadow: none;
-    backdrop-filter: blur(6px);
+    color: rgb(190, 190, 190);
+}
+@media (max-width: 480px) {
+    .top-controls {
+        flex-direction: row;       
+        justify-content: space-between; 
+        align-items: center;
+        gap: 20px;
+        padding: 10px;
+    }
+
+    .upload-wrapper,
+    .preset-wrapper {
+        width: auto;                
+        flex: 1;                    
+        align-items: center;        
+    }
+
+    .upload-wrapper input[type="file"],
+    .dropdown .select {
+        width: 100%;              
+        height: 44px;              
+        font-size: 14px;
+        line-height: 44px;         
+    }
+}
+
+
+/* ---------------- Upload Button ---------------- */
+.upload-button {
+    width: 140px;
+    height: 36px;
+    border-radius: 8px;
+    background: rgba(125,125,125,0.25);
+    color: rgb(210,210,210);
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.25s ease;
-    overflow: hidden;
-}
-
-/* Hide default file input button */
-#upload::-webkit-file-upload-button {
-    visibility: hidden;
-}
-
-/* Custom label using pseudo-element */
-#upload::before {
-    content: 'Upload Image';
-    display: block;
-    width: 100%;
-    height: 100%;
-    text-align: center;
-    line-height: 40px;           /* vertically center text */
-    border-radius: 12px;
-    background: rgba(0, 0, 0, 0.15);
-    color: rgb(180, 180, 180);
+    cursor: pointer;
     font-weight: 500;
+    transition: background 0.2s;
+}
+
+.upload-button:hover {
+    background: rgba(255,255,255,0.5);
+}
+
+/* ---------------- Preview Image ---------------- */
+.upload-preview-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* space between button and preview */
+}
+
+
+#preview {
+    height: 36px;          /* match upload button */
+    width: auto;           /* maintain aspect ratio */
+    object-fit: contain;   /* scale nicely */
+    display: none;         /* hide until an image is uploaded */
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+
+/* ---------------- Mobile Adjustments ---------------- */
+@media (max-width: 480px) {
+    .upload-button {
+        width: 120px;         /* wider for touch */
+        height: 44px;         /* taller for easier tap */
+        font-size: 10px;      /* slightly bigger text */
+    }
+    #preview {
+        height: 44px;         /* match button height */
+        border-radius: 10px;
+    }
+
+    .upload-preview-wrapper {
+        flex-direction: row;  /* keep button and preview inline */
+        gap: 6px;             /* small space between button and preview */
+        align-items: center;
+    }
+}
+/* ---------------- Preset Dropdown ---------------- */
+.preset-wrapper {
+    margin-left: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 13px;
+    color: rgb(210,210,210);
+}
+
+.dropdown.disabled .select {
+    background: rgba(125, 125, 125, 0.25);
+    color: rgb(210, 210, 210);
+    cursor: not-allowed;
+}
+
+.dropdown.disabled .select:hover {
+    background: rgba(125, 125, 125, 0.25); /* no hover */
+}
+
+.dropdown.disabled .dropdown-menu li {
+    pointer-events: none; /* cannot click items */
+}
+.dropdown {
+    position: relative;
+    width: 120px;
+    font-size: 13px;
+}
+
+.dropdown .select {
+    height: 36px;
+    padding: 0 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(125, 125, 125, 0.25);
+    border-radius: 10px;
+    color: rgb(210, 210, 210);
     cursor: pointer;
     backdrop-filter: blur(6px);
-    transition: all 0.25s ease;
+    transition: 0.25s;
 }
 
-/* Hover effect */
-#upload:hover::before {
-    background: rgba(0, 0, 0, 0.25);
-    box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+.dropdown .select:hover { background: rgba(0,0,0,0.35); }
+
+.dropdown-menu {
+    position: absolute;
+    top: 100%; left: 0; width: 100%;
+    background: rgba(125, 125, 125, 0.25);
+    border-radius: 0 0 10px 10px;
+    backdrop-filter: blur(6px);
+    margin: 4px 0 0;
+    padding: 0;
+    list-style: none;
+    z-index: 100;
+    display: none;
+    transition: 0.2s;
 }
 
-/* Active effect */
-#upload:active::before {
-    background: rgba(0, 0, 0, 0.2);
-    transform: translateY(1px);
-    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+.dropdown-menu li {
+    padding: 6px 10px;
+    cursor: pointer;
+    color: rgb(210, 210, 210);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    transition: background 0.2s;
+}
+.dropdown-menu li:last-child { border-bottom: none; }
+.dropdown-menu li:hover { background: rgba(0, 0, 0, 0.08); }
+.dropdown.active .dropdown-menu { display: block; }
+
+@media (max-width: 480px) {
+    /* Make controls more tappable */
+    .preset-wrapper label {
+        font-size: 14px;
+    }
+
+    .dropdown {
+        width: 130px; 
+    }
+    .dropdown .select {
+        height: 44px;
+        font-size: 10px;
+        border-radius: 10px;
+    }
+    .dropdown-menu li {
+        font-size: 10px;
+    }
 }
 
 
-.controls {
+.controls-wrapper {
     position: fixed;
-    bottom: 20px; /* small gap from bottom */
-    left: 50%;    /* center horizontally */
-    transform: translateX(-50%); /* center alignment */
-      /* adapt to content */
-    width: 90%; /* prevent it from stretching too far */
-    background: rgba(255, 255, 255, 0.05); /* slightly darker for contrast */
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 15px;
-    padding: 10px 15px;
-    border-radius: 12px; /* rounded edges */
-    box-sizing: border-box;
-    z-index: 10;
-    border: 1px solid rgba(255,255,255,0.2); /* subtle border */
-    backdrop-filter: blur(5px); /* subtle frosted glass effect */
-}
-.controls {
-    position: fixed;
-    bottom: 20px;
+    bottom: 10px;
     left: 50%;
     transform: translateX(-50%);
-    width: 90%;
+    display: flex;
+    flex-direction: column-reverse; /* toggle button at bottom */
+    align-items: center;
+    z-index: 20;
+    width: 90%;               
+    max-width: 1200px;
+}
+
+.controls {
+    position: relative; /* change from fixed to relative */
+    width: 100%;
     background: rgba(125, 125, 125, 0.25);
     display: flex;
     flex-wrap: wrap;
-    justify-content: space-around; /* even spacing */
+    justify-content: space-between;
     gap: 15px;
-    padding: 12px 15px;
-    border-radius: 12px;
+    padding: 0; 
     box-sizing: border-box;
-    z-index: 10;
-    border: 1px solid rgba(255,255,255,0.2);
+    border: none;
     backdrop-filter: blur(5px);
+    max-height: 0; 
+    overflow: hidden;
+    transition: max-height 0.4s ease, padding 0.4s ease;
+}
+.controls.show {
+    max-height: 500px;
+    padding: 12px 15px;
 }
 
 /* Each slider-label pair container */
@@ -116,8 +254,8 @@ canvas {
     display: flex;
     flex-direction: column;
     align-items: center;
-    min-width: 80px; /* prevents items from collapsing */
-    flex: 1 1 100px; /* flexible width but consistent minimum */
+    min-width: 500px; /* prevents items from collapsing */
+    flex: 1 1 200px; /* flexible width but consistent minimum */
 }
 
 /* Label styling */
@@ -130,9 +268,9 @@ canvas {
 /* Slider styling */
 .controls input[type="range"] {
     -webkit-appearance: none;
-    width: 120px;
-    height: 6px;
-    border-radius: 3px;
+    width: 100%;
+    height: 8px;
+    border-radius: 5px;
     background: rgba(255, 255, 255, 0.25);
     outline: none;
     transition: all 0.2s;
@@ -153,6 +291,76 @@ canvas {
     transform: scale(1.2);
 }
 
+#toggleControls {
+    width: 100%;             
+    padding: 8px 0;
+    border: none;
+    border-radius: 12px 12px 0 0;
+    background: rgba(125, 125, 125, 0.25);
+    color: rgb(210, 210, 210);
+    cursor: pointer;
+    backdrop-filter: blur(5px);
+    transition: all 0.3s;
+    font-size: 16px;
+}
 
+#toggleControls:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
 
+@media (max-width:820px) {
+    .controls-wrapper {
+        width: 95%;               
+        bottom: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        flex-direction: column-reverse; 
+    }
 
+    .controls {
+        flex-wrap: nowrap;           
+        flex-direction: column;     
+        justify-content: flex-start;
+        gap: 12px;                  
+        max-height: 0;
+        overflow-x: hidden;
+        overflow-y: auto;
+        transition: max-height 0.4s ease, padding 0.4s ease;
+        scrollbar-width: thin; 
+        scrollbar-color: rgba(255,255,255,0.25) transparent;
+    }
+    .controls.show {
+        max-height: 30vh;         
+        padding: 12px 10px;
+    }
+        .control-item {
+        width: 100%;
+        min-width: 50%;                
+        display: flex;
+        flex-direction: column;      
+        align-items: stretch;
+        gap: 6px;
+        margin-bottom: 0;
+    }
+
+    .control-item label {
+        font-size: 0.95rem;
+        margin-bottom: 4px;
+        text-align: left;
+    }
+
+    .controls input[type="range"] {
+        width: 100%;                 /* fill parent width */
+        height: 8px;
+    }
+
+    .controls input[type="range"]::-webkit-slider-thumb {
+        width: 18px; height: 18px;
+    }
+
+    #toggleControls {
+        font-size: 18px;
+        padding: 10px 0;
+        border-radius: 12px 12px 0 0;
+    }
+}

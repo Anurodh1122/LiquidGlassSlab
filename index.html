@@ -2,41 +2,86 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Liquid Glass UI Shader</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-    <input type="file" id="upload" accept="image/*">
-    <div class="controls">
-        <div class="control-item">
-            <label>Refraction: <span id="refractionValue">2.000</span></label>
-            <input type="range" id="refraction" min="0" max="5" step="0.001" value="2.000">
+        <!-- Top Controls -->
+    <div class="top-controls">
+        <div class="upload-wrapper">
+            <label>Upload Image:</label>
+            <div class="upload-preview-wrapper">
+                <div class="upload-button" id="uploadBtn">Upload Image</div>
+                <img id="preview" alt="Preview" />
+                <input type="file" id="upload" accept="image/*" style="display:none;">
+                
+            </div>
         </div>
-        <div class="control-item">
-            <label>Curvature: <span id="domeValue">6.0</span></label>
-            <input type="range" id="curvature" min="1" max="15" step="0.2" value="6.0">
-        </div>
-        <div class="control-item">
-            <label>Transparency: <span id="alphaValue">0.9</span></label>
-            <input type="range" id="alpha" min="0" max="1" step="0.01" value="0.9">
-        </div>
-        <div class="control-item">
-            <label>Width: <span id="widthValue">300</span></label>
-            <input type="range" id="slabWidth" min="50" max="600" step="1" value="300">
-        </div>
-        <div class="control-item">
-            <label>Height: <span id="heightValue">400</span></label>
-            <input type="range" id="slabHeight" min="50" max="600" step="1" value="400">
-        </div>
-        <div class="control-item">
-            <label>Corner Radius: <span id="cornerValue">0.50</span></label>
-            <input type="range" id="cornerRadius" min="0" max="1" step="0.01" value="0.50">
-        </div>
-        <div class="control-item">
-            <label>Blur: <span id="blurValue">2.5</span></label>
-            <input type="range" id="blurSlider" min="0" max="5" step="0.1" value="2.5">
+
+
+        <div class="preset-wrapper">
+            <label>Preset Shape:</label>
+            <div class="dropdown disabled">
+                <div class="select">
+                    <span>Select Preset</span>
+                    <i class="fa fa-chevron-down"></i>
+                </div>
+                <input type="hidden" name="preset">
+                <ul class="dropdown-menu">
+                    <li data-value="rounded">Rounded Rectangle</li>
+                    <li data-value="circle">Circle</li>
+                </ul>
+            </div>
         </div>
     </div>
+
+    <div class="controls-wrapper">
+        <div class="controls">
+
+            <div class="control-item">
+                <label>Refraction: <span id="refractionValue">1.750</span></label>
+                <input type="range" id="refraction" min="0" max="5" step="0.001">
+            </div>
+
+            <div class="control-item">
+                <label>Curvature: <span id="domeValue">4.0</span></label>
+                <input type="range" id="curvature" min="1" max="15" step="0.2">
+            </div>
+
+            <div class="control-item">
+                <label>Width: <span id="widthValue">200</span></label>
+                <input type="range" id="slabWidth" min="50" max="600" step="1">
+            </div>
+
+            <div class="control-item">
+                <label>Height: <span id="heightValue">200</span></label>
+                <input type="range" id="slabHeight" min="50" max="600" step="1">
+            </div>
+
+            <div class="control-item">
+                <label>Corner Radius: <span id="cornerValue">0.50</span></label>
+                <input type="range" id="cornerRadius" min="0" max="1" step="0.01">
+            </div>
+
+            <div class="control-item">
+                <label>Blur: <span id="blurValue">2.0</span></label>
+                <input type="range" id="blurSlider" min="0" max="5" step="0.1">
+            </div>
+
+            <div class="control-item">
+                <label>Track Speed: <span id="trackSpeedValue">0.02</span></label>
+                <input type="range" id="trackSpeedSlider" min="0.01" max="0.2" step="0.005">
+            </div>
+
+
+        </div>
+        <button id="toggleControls">Controls</button>
+        
+        
+    </div>
+
 
     <canvas id="canvas"></canvas>
     <script type="module" src="main.js"></script>
