@@ -339,7 +339,7 @@ const presets = {
         MAX_REFRACT: 1.750,
         DOME_POWER: 4.0,
         CORNER_RADIUS: 0.5,
-        BLUR: isMobile ? 1.4 : 2.0,
+        BLUR: isMobile ? 0.6 : 1.2,
     }),
     circle: () => ({
         w: isMobile ? 100 : 200,
@@ -347,7 +347,7 @@ const presets = {
         MAX_REFRACT: isMobile ? 0.075 : 0.1300,
         DOME_POWER: isMobile ? 6.5 : 6.5,
         CORNER_RADIUS: 1.0,
-        BLUR: isMobile ? 0.6 : 1.5,
+        BLUR: isMobile ? 0.4 : 1.0,
     })
 };
 
