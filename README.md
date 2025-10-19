@@ -1,28 +1,39 @@
 # Apple IOS26 Like Liquid Glass Slab Shader
 
-A WebGL-based interactive frosted glass / liquid slab shader. Users can upload an image, adjust the slab size, curvature, corner radius, transparency, and blur to create a glassy refractive effect.
+A **WebGL-based interactive frosted glass / liquid slab shader** inspired by Apple’s translucent UI effects.  
+Users can upload an image, drag a smooth refractive “glass slab” around, and fine-tune its shape, curvature, and blur for a realistic liquid-glass appearance.
 
 ## Features
 - Interactive slab with rounded corners
-- Dome-shaped refraction
-- Adjustable transparency & blur (frosted effect)
+- Dome-shaped refraction shader
+- Frosted-glass blur effect 
 - Upload your own image
+- Live parameter controls (refraction, curvature, blur, size, etc.)
 - Control panel for live parameter tweaking
+- Responsive for both desktop and mobile
 
 ## Demo: [Liquid glass slab](https://anurodh1122.github.io/LiquidGlassSlab/)
-![Shader Demo](./demo.gif)  <!-- or embed video link -->
-
-Photo credit: [Stunning High-Resolution Nature and Landscape Backgrounds by Vecteezy](https://www.vecteezy.com/photo/49547663-stunning-high-resolution-nature-and-landscape-backgrounds-breathtaking-scenery-in-hd)
+![Main Demo](./assets/demo.gif)
 
 ## How to Use
 1. Click the "Upload Image" button
 2. Use the sliders at the bottom to adjust:
-   - Refraction
+   ![Controls Guide](./assets/controls.gif)
+   - Refraction intensity
    - Curvature
-   - Transparency
    - Slab Width/Height
    - Corner Radius
    - Blur
+   - Finger or cursor tracking speed
 3. Drag the slab on the canvas to reposition
 
+The shader includes a two pre-built presets you can try instantly:
+![Preset Display](./assets/preset.gif)
+| Preset | Description | Recommended Use |
+|---------|--------------|-----------------|
+|**Rounded Slab** | Balanced rectangle with subtle corner radius and refraction. | Default elegant “glass panel” look. |
+|**Circle Slab** | Perfect circle with soft dome curvature. | Ideal for bubble or lens-like effects. |
+> Select a preset from the dropdown to automatically adjust all relevant parameters (size, curvature, blur, etc.).
+
+Photo credit: [Stunning High-Resolution Nature and Landscape Backgrounds by Vecteezy](https://www.vecteezy.com/photo/49547663-stunning-high-resolution-nature-and-landscape-backgrounds-breathtaking-scenery-in-hd)
 
