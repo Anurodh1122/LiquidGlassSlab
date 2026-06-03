@@ -388,30 +388,33 @@ function applyPreset(p) {
   if (typeof needsRedraw !== "undefined") needsRedraw = true;
 }
 
-// ============ DROPDOWN ============
-const presetBtn = document.getElementById("presetBtn");
-const presetMenu = document.getElementById("presetMenu");
-const presetLabel = document.getElementById("presetLabel");
-
-presetBtn.addEventListener("click", () => {
-  if (presetBtn.disabled) return;
-  presetMenu.classList.toggle("hidden");
-});
-document.addEventListener("click", (e) => {
-  if (!presetBtn.contains(e.target) && !presetMenu.contains(e.target)) {
-    presetMenu.classList.add("hidden");
-  }
-});
-presetMenu.querySelectorAll("li").forEach((li) => {
-  li.addEventListener("click", () => {
-    const v = li.dataset.value;
-    const p = presets[v]?.();
+// ============ PRESETS (row toggle) ============
+const presetButtons = [...document.querySelectorAll("[data-value]")];
+presetButtons.forEach((b) => {
+  b.addEventListener("click", () => {
+    const p = presets[b.dataset.value]?.();
     if (!p) return;
     applyPreset(p);
-    presetLabel.textContent = li.textContent;
-    presetMenu.classList.add("hidden");
+    presetButtons.forEach((o) => (o.dataset.active = o === b ? "1" : "0"));
   });
 });
+
+// ============ SETTINGS PANEL ============
+const panelBtn = document.getElementById("panelBtn");
+const panel = document.getElementById("panel");
+function setPanel(open) {
+  panel.classList.toggle("hidden", !open);
+  panel.classList.toggle("flex", open);
+}
+if (panelBtn && panel) {
+  panelBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    setPanel(panel.classList.contains("hidden"));
+  });
+  document.addEventListener("click", (e) => {
+    if (!panel.contains(e.target) && !panelBtn.contains(e.target)) setPanel(false);
+  });
+}
 
 // ============ POINTER ============
 let currentMouse = [slab.x, slab.y];
@@ -475,8 +478,26 @@ const controlsEl = document.getElementById("controls");
 document.getElementById("toggleControls").addEventListener("click", () => {
   const hidden = controlsEl.classList.contains("hidden");
   controlsEl.classList.toggle("hidden", !hidden);
-  controlsEl.classList.toggle("flex", hidden);
+  controlsEl.classList.toggle("grid", hidden);
 });
+
+// ============ BACKEND BADGE ============
+// Same center pill as the WebGPU build, so it's always clear which renderer is
+// live. WEBGL_debug_renderer_info gives the unmasked GPU string when available.
+(function () {
+  const el = document.getElementById("gpuInfo");
+  if (!el) return;
+  let label = "WebGL1";
+  try {
+    const dbg = gl.getExtension("WEBGL_debug_renderer_info");
+    const r = dbg && gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL);
+    if (r) label += " · " + r;
+  } catch {}
+  el.textContent = label;
+  el.title = label;
+  el.classList.remove("hidden");
+  el.classList.add("flex");
+})();
 
 // ============ UPLOAD ============
 const upload = document.getElementById("upload");

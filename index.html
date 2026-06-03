@@ -28,6 +28,7 @@
         touch-action: none;
       }
 
+      /* ---- Range sliders ---- */
       input[type="range"] {
         -webkit-appearance: none;
         appearance: none;
@@ -76,12 +77,70 @@
         background: #f3f4f6;
       }
 
-      /* Active state for the three theme buttons. */
-      [data-theme][data-active="1"] {
-        background: rgba(0, 0, 0, 0.18);
+      /* ---- Segmented slider (theme / gpu): 3 stops + sliding glass knob ---- */
+      .seg {
+        position: relative;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        padding: 4px;
+        border-radius: 0.85rem;
+      }
+      .seg > button {
+        position: relative;
+        z-index: 1;
+        background: transparent;
+        padding: 0.4rem 0;
+        font-size: 0.72rem;
+        font-weight: 500;
+        border-radius: 0.6rem;
+        color: rgb(64, 64, 64);
+        transition: color 0.2s;
+      }
+      .dark .seg > button {
+        color: rgb(212, 212, 212);
+      }
+      .seg > button[data-active="1"] {
+        color: #0a0a0a;
+        font-weight: 600;
+      }
+      .dark .seg > button[data-active="1"] {
+        color: #fff;
+      }
+      .seg-knob {
+        position: absolute;
+        top: 4px;
+        bottom: 4px;
+        left: 4px;
+        width: calc((100% - 8px) / 3);
+        border-radius: 0.6rem;
+        background: rgba(255, 255, 255, 0.7);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+        transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+        pointer-events: none;
+      }
+      .dark .seg-knob {
+        background: rgba(255, 255, 255, 0.22);
+      }
+      /* Knob position = index of the active stop (button order in markup). */
+      .seg:has(> button[data-theme="light"][data-active="1"]) .seg-knob,
+      .seg:has(> button[data-gpu="high-performance"][data-active="1"]) .seg-knob {
+        transform: translateX(0%);
+      }
+      .seg:has(> button[data-theme="dark"][data-active="1"]) .seg-knob,
+      .seg:has(> button[data-gpu="low-power"][data-active="1"]) .seg-knob {
+        transform: translateX(100%);
+      }
+      .seg:has(> button[data-theme="auto"][data-active="1"]) .seg-knob,
+      .seg:has(> button[data-gpu="auto"][data-active="1"]) .seg-knob {
+        transform: translateX(200%);
+      }
+
+      /* ---- Preset row toggle ---- */
+      [data-value][data-active="1"] {
+        background: rgba(0, 0, 0, 0.16);
         color: #111;
       }
-      .dark [data-theme][data-active="1"] {
+      .dark [data-value][data-active="1"] {
         background: rgba(255, 255, 255, 0.28);
         color: #fff;
       }
@@ -93,347 +152,253 @@
   >
     <canvas id="canvas" class="fixed inset-0 w-screen h-screen z-0"></canvas>
 
-    <!-- TOP CONTROLS -->
+    <!-- ============ TOP BAR ============ -->
+    <!-- Upload (left) · GPU usage (center) · Settings (right). -->
     <div
-      class="fixed top-3 left-0 right-0 z-50 px-4 flex flex-wrap items-end justify-between gap-3 pointer-events-none"
+      class="fixed top-3 inset-x-0 z-40 px-4 flex items-center justify-between gap-3 pointer-events-none"
     >
-      <!-- Upload -->
-      <div class="flex flex-col gap-1 pointer-events-auto">
-        <span class="text-xs font-medium text-neutral-700 dark:text-neutral-300"
-          >Upload image</span
+      <!-- LEFT: Upload -->
+      <div class="flex items-center gap-2 pointer-events-auto">
+        <button
+          id="uploadBtn"
+          class="px-4 h-9 rounded-xl bg-white/55 dark:bg-white/15 hover:bg-white/75 dark:hover:bg-white/25 backdrop-blur-md text-sm font-medium transition"
         >
-        <div class="flex items-center gap-2">
-          <button
-            id="uploadBtn"
-            class="px-4 h-9 rounded-xl bg-white/55 dark:bg-white/15 hover:bg-white/75 dark:hover:bg-white/25 backdrop-blur-md text-sm font-medium transition"
-          >
-            Upload
-          </button>
-          <img
-            id="preview"
-            class="h-9 rounded-lg border border-black/10 dark:border-white/15 hidden"
-            alt="preview"
-          />
-          <input type="file" id="upload" accept="image/*" class="hidden" />
-        </div>
+          Upload
+        </button>
+        <img
+          id="preview"
+          class="h-9 rounded-lg border border-black/10 dark:border-white/15 hidden"
+          alt="preview"
+        />
+        <input type="file" id="upload" accept="image/*" class="hidden" />
       </div>
 
+      <!-- CENTER: GPU info / usage -->
+      <div
+        id="gpuInfo"
+        class="hidden absolute left-1/2 -translate-x-1/2 pointer-events-auto px-3 h-8 max-w-[60vw] items-center rounded-full bg-white/55 dark:bg-white/15 backdrop-blur-md text-[11px] font-medium text-neutral-700 dark:text-neutral-200 truncate"
+      ></div>
+
+      <!-- RIGHT: Settings panel toggle -->
+      <button
+        id="panelBtn"
+        class="pointer-events-auto px-4 h-9 inline-flex items-center gap-1.5 rounded-xl bg-white/55 dark:bg-white/15 hover:bg-white/75 dark:hover:bg-white/25 backdrop-blur-md text-sm font-medium transition"
+      >
+        <span class="opacity-80">⚙</span> Settings
+      </button>
+    </div>
+
+    <!-- ============ RIGHT SETTINGS PANEL ============ -->
+    <div
+      id="panel"
+      class="hidden fixed top-16 right-3 z-50 w-72 max-w-[calc(100vw-1.5rem)] p-4 flex-col gap-5 rounded-2xl bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl shadow-2xl border border-black/5 dark:border-white/10"
+    >
       <!-- Theme -->
-      <div class="flex flex-col gap-1 items-center pointer-events-auto">
-        <span class="text-xs font-medium text-neutral-700 dark:text-neutral-300"
+      <div class="flex flex-col gap-1.5">
+        <span
+          class="text-xs font-semibold text-neutral-700 dark:text-neutral-300"
           >Theme</span
         >
         <div
-          class="inline-flex p-1 gap-1 rounded-xl bg-white/55 dark:bg-white/15 backdrop-blur-md"
+          class="seg bg-white/55 dark:bg-white/10 backdrop-blur-md"
+          data-seg="theme"
         >
+          <div class="seg-knob"></div>
+          <button data-theme="light">Light</button>
+          <button data-theme="dark">Dark</button>
+          <button data-theme="auto">Auto</button>
+        </div>
+      </div>
+
+      <!-- Presets -->
+      <div class="flex flex-col gap-1.5">
+        <span
+          class="text-xs font-semibold text-neutral-700 dark:text-neutral-300"
+          >Shape preset</span
+        >
+        <div class="grid grid-cols-3 gap-1.5">
           <button
-            data-theme="light"
-            class="px-3 py-1.5 rounded-lg text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:bg-black/10 dark:hover:bg-white/15 transition"
+            data-value="square"
+            class="py-1.5 rounded-lg text-xs font-medium bg-white/55 dark:bg-white/10 hover:bg-white/75 dark:hover:bg-white/20 backdrop-blur-md transition"
           >
-            Light
+            Square
           </button>
           <button
-            data-theme="dark"
-            class="px-3 py-1.5 rounded-lg text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:bg-black/10 dark:hover:bg-white/15 transition"
+            data-value="rectangle"
+            class="py-1.5 rounded-lg text-xs font-medium bg-white/55 dark:bg-white/10 hover:bg-white/75 dark:hover:bg-white/20 backdrop-blur-md transition"
           >
-            Dark
+            Rect
           </button>
           <button
-            data-theme="auto"
-            class="px-3 py-1.5 rounded-lg text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:bg-black/10 dark:hover:bg-white/15 transition"
+            data-value="circle"
+            class="py-1.5 rounded-lg text-xs font-medium bg-white/55 dark:bg-white/10 hover:bg-white/75 dark:hover:bg-white/20 backdrop-blur-md transition"
           >
-            Auto
+            Circle
+          </button>
+          <button
+            data-value="pill"
+            class="py-1.5 rounded-lg text-xs font-medium bg-white/55 dark:bg-white/10 hover:bg-white/75 dark:hover:bg-white/20 backdrop-blur-md transition"
+          >
+            Pill
+          </button>
+          <button
+            data-value="bar"
+            class="py-1.5 rounded-lg text-xs font-medium bg-white/55 dark:bg-white/10 hover:bg-white/75 dark:hover:bg-white/20 backdrop-blur-md transition"
+          >
+            Bar
           </button>
         </div>
       </div>
 
-      <!-- Preset -->
-      <div class="flex flex-col gap-1 items-center pointer-events-auto">
-        <span class="text-xs font-medium text-neutral-700 dark:text-neutral-300"
-          >Shape preset</span
+      <!-- GPU (WebGPU only — revealed by script-webgpu.js) -->
+      <div id="gpuGroup" class="hidden flex-col gap-1.5">
+        <span
+          class="text-xs font-semibold text-neutral-700 dark:text-neutral-300"
+          >GPU</span
         >
-        <div class="relative w-40 text-sm">
-          <button
-            id="presetBtn"
-            class="w-full h-9 px-3 flex items-center justify-between rounded-xl bg-white/55 dark:bg-white/15 hover:bg-white/75 dark:hover:bg-white/25 backdrop-blur-md transition"
-          >
-            <span id="presetLabel">Select shape</span>
-            <span class="opacity-70">▾</span>
-          </button>
-          <ul
-            id="presetMenu"
-            class="hidden absolute top-[calc(100%+4px)] left-0 right-0 p-1 rounded-xl z-10 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md shadow-xl"
-          >
-            <li
-              data-value="square"
-              class="px-3 py-2 rounded-lg cursor-pointer hover:bg-black/10 dark:hover:bg-white/15"
-            >
-              Square
-            </li>
-            <li
-              data-value="rectangle"
-              class="px-3 py-2 rounded-lg cursor-pointer hover:bg-black/10 dark:hover:bg-white/15"
-            >
-              Rectangle
-            </li>
-            <li
-              data-value="circle"
-              class="px-3 py-2 rounded-lg cursor-pointer hover:bg-black/10 dark:hover:bg-white/15"
-            >
-              Circle
-            </li>
-            <li
-              data-value="pill"
-              class="px-3 py-2 rounded-lg cursor-pointer hover:bg-black/10 dark:hover:bg-white/15"
-            >
-              Pill
-            </li>
-            <li
-              data-value="bar"
-              class="px-3 py-2 rounded-lg cursor-pointer hover:bg-black/10 dark:hover:bg-white/15"
-            >
-              Bar
-            </li>
-          </ul>
+        <div
+          class="seg bg-white/55 dark:bg-white/10 backdrop-blur-md"
+          data-seg="gpu"
+        >
+          <div class="seg-knob"></div>
+          <button data-gpu="high-performance">Perf</button>
+          <button data-gpu="low-power">Power</button>
+          <button data-gpu="auto">Auto</button>
         </div>
+        <span
+          id="gpuNote"
+          class="text-[10px] text-neutral-500 dark:text-neutral-400 leading-snug"
+        ></span>
       </div>
     </div>
 
-    <!-- BOTTOM CONTROLS -->
+    <!-- ============ BOTTOM CONTROLS (bento grid) ============ -->
     <div
-      class="fixed bottom-3 left-1/2 -translate-x-1/2 w-[92%] max-w-4xl z-20 flex flex-col-reverse"
+      class="fixed bottom-3 left-1/2 -translate-x-1/2 w-[94%] max-w-5xl z-20 flex flex-col-reverse"
     >
       <div
         id="controls"
-        class="hidden flex-wrap gap-4 p-4 rounded-t-xl bg-white/55 dark:bg-neutral-900/60 backdrop-blur-md"
+        class="hidden grid grid-cols-2 md:grid-cols-4 gap-3 p-4 rounded-2xl bg-white/55 dark:bg-neutral-900/60 backdrop-blur-md"
       >
-        <div class="flex flex-col gap-1.5 flex-1 min-w-[180px]">
-          <div
-            class="flex justify-between text-xs text-neutral-700 dark:text-neutral-300"
-          >
+        <!-- Refraction -->
+        <div class="rounded-xl bg-white/40 dark:bg-white/5 p-3 flex flex-col gap-1.5">
+          <div class="flex justify-between text-xs text-neutral-700 dark:text-neutral-300">
             <span>Refraction</span><span id="refractVal">0.980</span>
           </div>
-          <input
-            type="range"
-            id="refract"
-            min="0"
-            max="5"
-            step="0.001"
-            value="0.98"
-          />
+          <input type="range" id="refract" min="0" max="5" step="0.001" value="0.98" />
         </div>
 
-        <div class="flex flex-col gap-1.5 flex-1 min-w-[180px]">
-          <div
-            class="flex justify-between text-xs text-neutral-700 dark:text-neutral-300"
-          >
+        <!-- Curvature -->
+        <div class="rounded-xl bg-white/40 dark:bg-white/5 p-3 flex flex-col gap-1.5">
+          <div class="flex justify-between text-xs text-neutral-700 dark:text-neutral-300">
             <span>Curvature</span><span id="curveVal">9.50</span>
           </div>
-          <input
-            type="range"
-            id="curve"
-            min="0.5"
-            max="15"
-            step="0.01"
-            value="9.5"
-          />
+          <input type="range" id="curve" min="0.5" max="15" step="0.01" value="9.5" />
         </div>
 
-        <div class="flex flex-col gap-1.5 flex-1 min-w-[180px]">
-          <div
-            class="flex justify-between text-xs text-neutral-700 dark:text-neutral-300"
-          >
+        <!-- Width -->
+        <div class="rounded-xl bg-white/40 dark:bg-white/5 p-3 flex flex-col gap-1.5">
+          <div class="flex justify-between text-xs text-neutral-700 dark:text-neutral-300">
             <span>Width</span><span id="widthVal">240</span>
           </div>
-          <input
-            type="range"
-            id="width"
-            min="40"
-            max="700"
-            step="1"
-            value="240"
-          />
+          <input type="range" id="width" min="40" max="700" step="1" value="240" />
         </div>
 
-        <div class="flex flex-col gap-1.5 flex-1 min-w-[180px]">
-          <div
-            class="flex justify-between text-xs text-neutral-700 dark:text-neutral-300"
-          >
+        <!-- Height -->
+        <div class="rounded-xl bg-white/40 dark:bg-white/5 p-3 flex flex-col gap-1.5">
+          <div class="flex justify-between text-xs text-neutral-700 dark:text-neutral-300">
             <span>Height</span><span id="heightVal">240</span>
           </div>
-          <input
-            type="range"
-            id="height"
-            min="40"
-            max="700"
-            step="1"
-            value="240"
-          />
+          <input type="range" id="height" min="40" max="700" step="1" value="240" />
         </div>
 
-        <div class="flex flex-col gap-1.5 flex-1 min-w-[180px]">
-          <div
-            class="flex justify-between text-xs text-neutral-700 dark:text-neutral-300"
-          >
+        <!-- Corner -->
+        <div class="rounded-xl bg-white/40 dark:bg-white/5 p-3 flex flex-col gap-1.5">
+          <div class="flex justify-between text-xs text-neutral-700 dark:text-neutral-300">
             <span>Corner radius</span><span id="cornerVal">0.50</span>
           </div>
-          <input
-            type="range"
-            id="corner"
-            min="0"
-            max="1"
-            step="0.01"
-            value="0.50"
-          />
+          <input type="range" id="corner" min="0" max="1" step="0.01" value="0.50" />
         </div>
 
-        <div class="flex flex-col gap-1.5 flex-1 min-w-[180px]">
-          <div
-            class="flex justify-between text-xs text-neutral-700 dark:text-neutral-300"
-          >
+        <!-- Blur -->
+        <div class="rounded-xl bg-white/40 dark:bg-white/5 p-3 flex flex-col gap-1.5">
+          <div class="flex justify-between text-xs text-neutral-700 dark:text-neutral-300">
             <span>Blur</span><span id="blurVal">0.8</span>
           </div>
-          <input
-            type="range"
-            id="blur"
-            min="0"
-            max="5"
-            step="0.05"
-            value="0.8"
-          />
+          <input type="range" id="blur" min="0" max="5" step="0.05" value="0.8" />
         </div>
 
-        <div class="flex flex-col gap-1.5 flex-1 min-w-[180px]">
-          <div
-            class="flex justify-between text-xs text-neutral-700 dark:text-neutral-300"
-          >
+        <!-- Dispersion -->
+        <div class="rounded-xl bg-white/40 dark:bg-white/5 p-3 flex flex-col gap-1.5">
+          <div class="flex justify-between text-xs text-neutral-700 dark:text-neutral-300">
             <span>Dispersion</span><span id="dispersionVal">0.30</span>
           </div>
-          <input
-            type="range"
-            id="dispersion"
-            min="0"
-            max="3"
-            step="0.01"
-            value="0.30"
-          />
+          <input type="range" id="dispersion" min="0" max="3" step="0.01" value="0.30" />
         </div>
 
-        <div class="flex flex-col gap-1.5 flex-1 min-w-[180px]">
-          <div
-            class="flex justify-between text-xs text-neutral-700 dark:text-neutral-300"
-          >
+        <!-- Border -->
+        <div class="rounded-xl bg-white/40 dark:bg-white/5 p-3 flex flex-col gap-1.5">
+          <div class="flex justify-between text-xs text-neutral-700 dark:text-neutral-300">
             <span>Border</span><span id="borderVal">0.25</span>
           </div>
-          <input
-            type="range"
-            id="border"
-            min="0"
-            max="1"
-            step="0.01"
-            value="0.35"
-          />
+          <input type="range" id="border" min="0" max="1" step="0.01" value="0.25" />
         </div>
 
+        <!-- Shadow (spans two cells) -->
         <div
-          class="flex flex-col gap-2 flex-1 min-w-[260px] p-2.5 rounded-lg border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.03]"
+          class="col-span-2 rounded-xl bg-white/40 dark:bg-white/5 p-3 flex flex-col gap-2"
         >
-          <div
-            class="text-xs font-semibold text-neutral-700 dark:text-neutral-200"
-          >
+          <div class="text-xs font-semibold text-neutral-700 dark:text-neutral-200">
             Shadow
           </div>
-
-          <div class="flex flex-col gap-1">
-            <div
-              class="flex justify-between text-[11px] text-neutral-600 dark:text-neutral-400"
-            >
-              <span>Darkness</span><span id="shadowDarkVal">0.10</span>
+          <div class="grid grid-cols-3 gap-3">
+            <div class="flex flex-col gap-1">
+              <div class="flex justify-between text-[11px] text-neutral-600 dark:text-neutral-400">
+                <span>Dark</span><span id="shadowDarkVal">0.10</span>
+              </div>
+              <input type="range" id="shadowDark" min="0" max="1" step="0.01" value="0.10" />
             </div>
-            <input
-              type="range"
-              id="shadowDark"
-              min="0"
-              max="1"
-              step="0.01"
-              value="0.10"
-            />
-          </div>
-
-          <div class="flex flex-col gap-1">
-            <div
-              class="flex justify-between text-[11px] text-neutral-600 dark:text-neutral-400"
-            >
-              <span>Spread</span><span id="shadowSpreadVal">0.40</span>
+            <div class="flex flex-col gap-1">
+              <div class="flex justify-between text-[11px] text-neutral-600 dark:text-neutral-400">
+                <span>Spread</span><span id="shadowSpreadVal">0.40</span>
+              </div>
+              <input type="range" id="shadowSpread" min="0" max="3" step="0.01" value="0.40" />
             </div>
-            <input
-              type="range"
-              id="shadowSpread"
-              min="0"
-              max="3"
-              step="0.01"
-              value="0.40"
-            />
-          </div>
-
-          <div class="flex flex-col gap-1">
-            <div
-              class="flex justify-between text-[11px] text-neutral-600 dark:text-neutral-400"
-            >
-              <span>Thickness</span><span id="shadowThickVal">4.50</span>
+            <div class="flex flex-col gap-1">
+              <div class="flex justify-between text-[11px] text-neutral-600 dark:text-neutral-400">
+                <span>Thick</span><span id="shadowThickVal">4.50</span>
+              </div>
+              <input type="range" id="shadowThick" min="0.1" max="5" step="0.05" value="4.50" />
             </div>
-            <input
-              type="range"
-              id="shadowThick"
-              min="0.1"
-              max="5"
-              step="0.05"
-              value="4.50"
-            />
           </div>
         </div>
 
-        <div class="flex flex-col gap-1.5 flex-1 min-w-[180px]">
-          <div
-            class="flex justify-between text-xs text-neutral-700 dark:text-neutral-300"
-          >
+        <!-- Tint -->
+        <div class="rounded-xl bg-white/40 dark:bg-white/5 p-3 flex flex-col gap-1.5">
+          <div class="flex justify-between text-xs text-neutral-700 dark:text-neutral-300">
             <span>Tint</span><span id="tintVal">0.06</span>
           </div>
-          <input
-            type="range"
-            id="tint"
-            min="0"
-            max="0.3"
-            step="0.005"
-            value="0.06"
-          />
+          <input type="range" id="tint" min="0" max="0.3" step="0.005" value="0.06" />
         </div>
 
-        <div class="flex flex-col gap-1.5 flex-1 min-w-[180px]">
-          <div
-            class="flex justify-between text-xs text-neutral-700 dark:text-neutral-300"
-          >
+        <!-- Track speed -->
+        <div class="rounded-xl bg-white/40 dark:bg-white/5 p-3 flex flex-col gap-1.5">
+          <div class="flex justify-between text-xs text-neutral-700 dark:text-neutral-300">
             <span>Track speed</span><span id="trackVal">0.025</span>
           </div>
-          <input
-            type="range"
-            id="track"
-            min="0.005"
-            max="0.3"
-            step="0.005"
-            value="0.025"
-          />
+          <input type="range" id="track" min="0.005" max="0.3" step="0.005" value="0.025" />
         </div>
       </div>
 
       <button
         id="toggleControls"
-        class="h-10 rounded-xl bg-white/55 dark:bg-white/15 hover:bg-white/75 dark:hover:bg-white/25 backdrop-blur-md text-sm font-medium transition"
+        class="h-10 mt-3 self-center px-6 rounded-xl bg-white/55 dark:bg-white/15 hover:bg-white/75 dark:hover:bg-white/25 backdrop-blur-md text-sm font-medium transition"
       >
         Controls
       </button>
     </div>
 
-    <script src="script.js"></script>
+    <!-- Backend picker: WebGPU (script-webgpu.js) with WebGL1 (script.js) fallback. -->
+    <script src="glass-loader.js"></script>
   </body>
 </html>
