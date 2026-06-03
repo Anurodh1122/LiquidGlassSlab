@@ -481,8 +481,8 @@ fn fs_main(frag : VSOut) -> @location(0) vec4<f32> {
 
   // ============ PRESETS (row toggle) ============
   const presets = {
-    square: () => ({ w: 220, h: 220, corner: 0.18 }),
-    rectangle: () => ({ w: 320, h: 200, corner: 0.1 }),
+    square: () => ({ w: 200, h: 200, corner: 0.50 }),
+    rectangle: () => ({ w: 320, h: 200, corner: 0.55 }),
     circle: () => ({ w: 220, h: 220, corner: 1.0 }),
     pill: () => ({ w: 340, h: 130, corner: 1.0 }),
     bar: () => ({ w: 500, h: 70, corner: 1.0 }),
