@@ -21,7 +21,10 @@
   const canvas = document.getElementById("canvas");
 
   function loadFallback(reason) {
-    console.warn("[glass] WebGPU unavailable — falling back to WebGL1:", reason);
+    console.warn(
+      "[glass] WebGPU unavailable — falling back to WebGL1:",
+      reason,
+    );
     const s = document.createElement("script");
     s.src = "script.js";
     document.head.appendChild(s);
@@ -41,8 +44,7 @@
   const isWindows =
     navigator.userAgentData?.platform === "Windows" ||
     /Windows/i.test(navigator.userAgent);
-  const powerPreference =
-    gpuPref === "auto" || isWindows ? undefined : gpuPref;
+  const powerPreference = gpuPref === "auto" || isWindows ? undefined : gpuPref;
 
   let adapter, device;
   try {
@@ -66,7 +68,9 @@
     }
   } catch {}
 
-  device.lost.then((d) => console.warn("[glass] WebGPU device lost:", d.reason));
+  device.lost.then((d) =>
+    console.warn("[glass] WebGPU device lost:", d.reason),
+  );
 
   const context = canvas.getContext("webgpu");
   const format = navigator.gpu.getPreferredCanvasFormat();
@@ -152,6 +156,8 @@ struct Uniforms {
   shadowSpread : f32,
   shadowThick  : f32,
   tint       : f32,
+  deformAmt  : f32,        // signed squash/stretch along deformDir (volume-preserving)
+  deformDir  : vec2<f32>,  // unit axis of deformation (latched to drag direction)
 };
 @group(0) @binding(0) var<uniform> U : Uniforms;
 @group(0) @binding(1) var bgSamp  : sampler;
@@ -193,7 +199,18 @@ fn fs_main(frag : VSOut) -> @location(0) vec4<f32> {
   let v_uv = frag.uv;
   let px = (v_uv * U.res) / U.dpr;
   let halfSize = U.size * 0.5;
-  let local = (px - U.center) / halfSize;
+
+  // ---- Squash & stretch ----
+  // Volume-preserving warp of the pixel offset BEFORE the SDF: stretch the shape
+  // by (1+amt) along the motion axis and compress by 1/(1+amt) perpendicular
+  // (amt<0 swaps the two). We inverse-transform the sample point, so refraction,
+  // dispersion, AA and shadow all follow the deformed shape for free.
+  let pc = px - U.center;
+  let a  = max(1.0 + U.deformAmt, 0.2);
+  let pu = dot(pc, U.deformDir);          // component along the deform axis
+  let pp = pc - pu * U.deformDir;         // perpendicular component
+  let pcW = (pu / a) * U.deformDir + pp * a;
+  let local = pcW / halfSize;
 
   let dist = sdRound(local, halfSize, U.corner);
   // fwidth() must be in uniform control flow; depth = -dist so the same aa also
@@ -260,7 +277,11 @@ fn fs_main(frag : VSOut) -> @location(0) vec4<f32> {
   const mainPipeline = device.createRenderPipeline({
     layout: "auto",
     vertex: { module: mainModule, entryPoint: "vs_main" },
-    fragment: { module: mainModule, entryPoint: "fs_main", targets: [{ format }] },
+    fragment: {
+      module: mainModule,
+      entryPoint: "fs_main",
+      targets: [{ format }],
+    },
     primitive: { topology: "triangle-list" },
   });
 
@@ -350,8 +371,16 @@ fn fs_main(frag : VSOut) -> @location(0) vec4<f32> {
     });
     const targetUsage =
       GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT;
-    blurTexA = device.createTexture({ size: [cw, ch], format: BLUR_FORMAT, usage: targetUsage });
-    blurTexB = device.createTexture({ size: [cw, ch], format: BLUR_FORMAT, usage: targetUsage });
+    blurTexA = device.createTexture({
+      size: [cw, ch],
+      format: BLUR_FORMAT,
+      usage: targetUsage,
+    });
+    blurTexB = device.createTexture({
+      size: [cw, ch],
+      format: BLUR_FORMAT,
+      usage: targetUsage,
+    });
     makeBindGroups();
   }
 
@@ -437,23 +466,80 @@ fn fs_main(frag : VSOut) -> @location(0) vec4<f32> {
     shadowThick: 4.5,
     tint: 0.06,
     trackSpeed: isMobile ? 0.06 : 0.025,
+    // Deformation (squash & stretch). deformOn = master toggle; strength 0 = off
+    // too; freq in Hz; damp = ratio.
+    deformOn: true,
+    deform: 0.35,
+    deformFreq: 3.0,
+    deformDamp: 0.7,
   };
 
   // ============ SLIDERS ============
   const sliderMap = [
-    ["refract", "refractVal", 3, (v) => (params.refract = v), () => params.refract],
+    [
+      "refract",
+      "refractVal",
+      3,
+      (v) => (params.refract = v),
+      () => params.refract,
+    ],
     ["curve", "curveVal", 2, (v) => (params.curve = v), () => params.curve],
     ["width", "widthVal", 0, (v) => (slab.w = v), () => slab.w],
     ["height", "heightVal", 0, (v) => (slab.h = v), () => slab.h],
     ["corner", "cornerVal", 2, (v) => (params.corner = v), () => params.corner],
     ["blur", "blurVal", 2, (v) => (params.blur = v), () => params.blur],
-    ["dispersion", "dispersionVal", 2, (v) => (params.dispersion = v), () => params.dispersion],
+    [
+      "dispersion",
+      "dispersionVal",
+      2,
+      (v) => (params.dispersion = v),
+      () => params.dispersion,
+    ],
     ["border", "borderVal", 2, (v) => (params.border = v), () => params.border],
-    ["shadowDark", "shadowDarkVal", 2, (v) => (params.shadowDark = v), () => params.shadowDark],
-    ["shadowSpread", "shadowSpreadVal", 2, (v) => (params.shadowSpread = v), () => params.shadowSpread],
-    ["shadowThick", "shadowThickVal", 2, (v) => (params.shadowThick = v), () => params.shadowThick],
+    [
+      "shadowDark",
+      "shadowDarkVal",
+      2,
+      (v) => (params.shadowDark = v),
+      () => params.shadowDark,
+    ],
+    [
+      "shadowSpread",
+      "shadowSpreadVal",
+      2,
+      (v) => (params.shadowSpread = v),
+      () => params.shadowSpread,
+    ],
+    [
+      "shadowThick",
+      "shadowThickVal",
+      2,
+      (v) => (params.shadowThick = v),
+      () => params.shadowThick,
+    ],
     ["tint", "tintVal", 2, (v) => (params.tint = v), () => params.tint],
-    ["track", "trackVal", 3, (v) => (params.trackSpeed = v), () => params.trackSpeed],
+    [
+      "track",
+      "trackVal",
+      3,
+      (v) => (params.trackSpeed = v),
+      () => params.trackSpeed,
+    ],
+    ["deform", "deformVal", 2, (v) => (params.deform = v), () => params.deform],
+    [
+      "deformFreq",
+      "deformFreqVal",
+      1,
+      (v) => (params.deformFreq = v),
+      () => params.deformFreq,
+    ],
+    [
+      "deformDamp",
+      "deformDampVal",
+      2,
+      (v) => (params.deformDamp = v),
+      () => params.deformDamp,
+    ],
   ];
 
   function syncSliders() {
@@ -481,7 +567,7 @@ fn fs_main(frag : VSOut) -> @location(0) vec4<f32> {
 
   // ============ PRESETS (row toggle) ============
   const presets = {
-    square: () => ({ w: 200, h: 200, corner: 0.50 }),
+    square: () => ({ w: 200, h: 200, corner: 0.5 }),
     rectangle: () => ({ w: 320, h: 200, corner: 0.55 }),
     circle: () => ({ w: 220, h: 220, corner: 1.0 }),
     pill: () => ({ w: 340, h: 130, corner: 1.0 }),
@@ -511,6 +597,22 @@ fn fs_main(frag : VSOut) -> @location(0) vec4<f32> {
   let targetMouse = [slab.x, slab.y];
   let dragging = false;
   let needsRedraw = true;
+
+  // ---- Deformation state ----
+  // A hidden "core" (lag) chases the slab center with a damped spring. The gap
+  // between them, projected onto a latched motion axis, is the signed squash/
+  // stretch. While dragging the core trails (stretch along motion); on stop it
+  // overshoots and oscillates (jiggle) before settling.
+  let lagX = slab.x,
+    lagY = slab.y,
+    lagVX = 0,
+    lagVY = 0;
+  let prevX = slab.x,
+    prevY = slab.y; // slab center last frame (for velocity)
+  let deformLastT = 0; // performance.now() of the last spring step
+  // deform.dx/dy = the held unit deform axis (the gap's direction); persists
+  // through brief mid-reversal moments when the gap is too small to define one.
+  const deform = { amt: 0, dx: 1, dy: 0 }; // -> uniforms (signed amt + unit axis)
   const dirty = () => {
     needsRedraw = true;
   };
@@ -531,8 +633,12 @@ fn fs_main(frag : VSOut) -> @location(0) vec4<f32> {
   canvas.addEventListener("pointerout", () => (dragging = false));
 
   if (isMobile) {
-    canvas.addEventListener("touchstart", (e) => e.preventDefault(), { passive: false });
-    canvas.addEventListener("touchmove", (e) => e.preventDefault(), { passive: false });
+    canvas.addEventListener("touchstart", (e) => e.preventDefault(), {
+      passive: false,
+    });
+    canvas.addEventListener("touchmove", (e) => e.preventDefault(), {
+      passive: false,
+    });
   }
 
   // ============ THEME ============
@@ -544,7 +650,9 @@ fn fs_main(frag : VSOut) -> @location(0) vec4<f32> {
     localStorage.setItem(THEME_KEY, mode);
     const isDark = mode === "dark" || (mode === "auto" && mq.matches);
     document.documentElement.classList.toggle("dark", isDark);
-    themeButtons.forEach((b) => (b.dataset.active = b.dataset.theme === mode ? "1" : "0"));
+    themeButtons.forEach(
+      (b) => (b.dataset.active = b.dataset.theme === mode ? "1" : "0"),
+    );
     rebuildTexture();
   }
 
@@ -552,7 +660,8 @@ fn fs_main(frag : VSOut) -> @location(0) vec4<f32> {
     b.addEventListener("click", () => applyTheme(b.dataset.theme)),
   );
   mq.addEventListener("change", () => {
-    if ((localStorage.getItem(THEME_KEY) || "auto") === "auto") applyTheme("auto");
+    if ((localStorage.getItem(THEME_KEY) || "auto") === "auto")
+      applyTheme("auto");
   });
 
   // ============ SETTINGS PANEL ============
@@ -567,7 +676,8 @@ fn fs_main(frag : VSOut) -> @location(0) vec4<f32> {
     setPanel(panel.classList.contains("hidden"));
   });
   document.addEventListener("click", (e) => {
-    if (!panel.contains(e.target) && !panelBtn.contains(e.target)) setPanel(false);
+    if (!panel.contains(e.target) && !panelBtn.contains(e.target))
+      setPanel(false);
   });
 
   // ============ GPU CONTROLS ============
@@ -601,6 +711,25 @@ fn fs_main(frag : VSOut) -> @location(0) vec4<f32> {
       ? "Windows currently lets the browser choose the GPU — this hint is ignored here."
       : "Switching reloads the page to apply.";
   }
+
+  // ============ DEFORMATION CONTROLS (WebGPU only) ============
+  // The deform sliders ship `disabled` in the markup so the WebGL1 fallback
+  // leaves them off; we enable them here, on the WebGPU path only.
+  ["deform", "deformFreq", "deformDamp"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = false;
+  });
+  const deformOnEl = document.getElementById("deformOn");
+  if (deformOnEl) {
+    deformOnEl.disabled = false;
+    deformOnEl.checked = params.deformOn;
+    deformOnEl.addEventListener("change", (e) => {
+      params.deformOn = e.target.checked;
+      dirty(); // redraw once to clear/restore the deformation immediately
+    });
+  }
+  const deformNote = document.getElementById("deformNote");
+  if (deformNote) deformNote.textContent = "Drag the slab to see it";
 
   // ============ CONTROLS TOGGLE ============
   const controlsEl = document.getElementById("controls");
@@ -643,6 +772,13 @@ fn fs_main(frag : VSOut) -> @location(0) vec4<f32> {
       currentMouse[1] = slab.y;
       targetMouse[0] = slab.x;
       targetMouse[1] = slab.y;
+      // Keep the deform core glued to the recentred slab so it doesn't kick.
+      lagX = slab.x;
+      lagY = slab.y;
+      lagVX = 0;
+      lagVY = 0;
+      prevX = slab.x;
+      prevY = slab.y;
     }
     rebuildTexture();
   }
@@ -679,6 +815,9 @@ fn fs_main(frag : VSOut) -> @location(0) vec4<f32> {
     uniformData[14] = params.shadowSpread;
     uniformData[15] = params.shadowThick;
     uniformData[16] = params.tint;
+    uniformData[17] = deform.amt; // signed squash/stretch
+    uniformData[18] = deform.dx; // deform axis x (unit)
+    uniformData[19] = deform.dy; // deform axis y (unit)
     device.queue.writeBuffer(uniformBuffer, 0, uniformData);
 
     // Blur uniforms (res + current blur amount; dir is baked per buffer).
@@ -720,7 +859,12 @@ fn fs_main(frag : VSOut) -> @location(0) vec4<f32> {
   function blurPass(encoder, view, bind) {
     const pass = encoder.beginRenderPass({
       colorAttachments: [
-        { view, clearValue: { r: 0, g: 0, b: 0, a: 1 }, loadOp: "clear", storeOp: "store" },
+        {
+          view,
+          clearValue: { r: 0, g: 0, b: 0, a: 1 },
+          loadOp: "clear",
+          storeOp: "store",
+        },
       ],
     });
     pass.setPipeline(blurPipeline);
@@ -749,6 +893,79 @@ fn fs_main(frag : VSOut) -> @location(0) vec4<f32> {
     }
     slab.x = currentMouse[0];
     slab.y = currentMouse[1];
+
+    // ---- Deformation (squash & stretch) ----
+    if (params.deformOn && params.deform > 0.0001) {
+      const now = performance.now();
+      let dt = deformLastT ? (now - deformLastT) / 1000 : 1 / 60;
+      deformLastT = now;
+      if (dt > 1 / 30) dt = 1 / 30; // clamp tab-switch / first-frame spikes
+
+      // Slab-centre velocity (px/s) this frame.
+      const slabVX = (slab.x - prevX) / dt;
+      const slabVY = (slab.y - prevY) / dt;
+      prevX = slab.x;
+      prevY = slab.y;
+
+      // Damped spring: a hidden "core" (lag) chases the slab centre. omega from
+      // freq (Hz); critically damped at damp = 1.
+      const omega = 2 * Math.PI * params.deformFreq;
+      const k = omega * omega;
+      const c = 2 * params.deformDamp * omega;
+      lagVX += (k * (slab.x - lagX) - c * lagVX) * dt;
+      lagVY += (k * (slab.y - lagY) - c * lagVY) * dt;
+      lagX += lagVX * dt;
+      lagY += lagVY * dt;
+
+      // The lag gap D points along the drag direction; |D| grows with speed.
+      const Dx = slab.x - lagX,
+        Dy = slab.y - lagY;
+      const mag = Math.hypot(Dx, Dy);
+      const shortEdge = Math.min(slab.w, slab.h) * 0.5;
+
+      // Axis = the gap's OWN direction, so the stretch always follows the drag
+      // (drag left => stretch left, never stuck perpendicular). The warp is
+      // sign-invariant, so this flips pop-free. Hold the last axis while the gap
+      // is tiny (mid-reversal) so it doesn't spin on noise.
+      if (mag > 0.5) {
+        deform.dx = Dx / mag;
+        deform.dy = Dy / mag;
+      }
+      const ux = deform.dx,
+        uy = deform.dy;
+
+      // How fast the elongation is collapsing along the axis: relative velocity
+      // of core vs slab, projected on the axis. >0 = stretching; <0 = the slab is
+      // folding back through the core (a reversal). The collapse briefly squashes
+      // along the axis = a perpendicular bulge, then it re-stretches the new way.
+      const collapse = -((slabVX - lagVX) * ux + (slabVY - lagVY) * uy);
+      const ref = shortEdge * omega; // px/s scale -> unitless
+      const stretch = shortEdge > 1 ? mag / shortEdge : 0;
+      const bulge = ref > 1 ? Math.max(0, collapse) / ref : 0;
+
+      // Signed: stretch along the axis, minus a transient reversal squash.
+      // Clamped so the shader warp stays well-formed (a in [0.5, 1.9]).
+      let s = (stretch - bulge * 0.9) * params.deform;
+      s = Math.max(-0.5, Math.min(0.9, s));
+      deform.amt = s;
+
+      // Keep rendering while anything is still in motion.
+      const settled =
+        mag < 0.05 &&
+        Math.abs(lagVX) + Math.abs(lagVY) < 0.5 &&
+        Math.abs(s) < 0.002;
+      if (!settled) needsRedraw = true;
+    } else {
+      // Disabled: keep the core synced so re-enabling doesn't snap.
+      lagX = slab.x;
+      lagY = slab.y;
+      lagVX = 0;
+      lagVY = 0;
+      prevX = slab.x;
+      prevY = slab.y;
+      deformLastT = 0;
+      deform.amt = 0;
+    }
 
     if (needsRedraw && mainBind) {
       render();
